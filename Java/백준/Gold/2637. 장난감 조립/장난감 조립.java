@@ -3,7 +3,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayDeque;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Queue;
 import java.util.StringTokenizer;
 
@@ -24,8 +27,9 @@ public class Main {
         int m = Integer.parseInt(st.nextToken());
 
         int[][] count = new int[n + 1][n + 1];
-        boolean[] isBasic = new boolean[n + 1];
-        Arrays.fill(isBasic, true);
+        HashMap<Integer, List<Integer>> child = new HashMap<>();
+        HashSet<Integer> set = new HashSet<>();
+        int[] parents = new int[n + 1];
 
         for (int i = 0; i < m; i++) {
             st = new StringTokenizer(br.readLine());
@@ -35,58 +39,51 @@ public class Main {
 
             count[x][y] = k;
 
-            isBasic[x] = false;
-        }
+            child.putIfAbsent(y, new ArrayList<>());
+            child.get(y).add(x);
 
-        for(int i =1; i < n; i++){
+            parents[x]++;
 
-            for (int j = 1; j < n; j++) {
-                if (!isBasic[j] && count[i][j] != 0) {
-                    for(int k = 1; k < n; k++){
-                        if (k == j) {
-                            continue;
-                        }
-                        count[i][k] += count[i][j] * count[j][k];
-                    }
-                    // 분해한 중간 부품은 0으로
-                    count[i][j] = 0;
-                }
-            }
+            set.add(x);
         }
 
         Queue<Integer> queue = new ArrayDeque<>();
 
-        // 마지막에 업데이트 되어있는 놈들 다 하나하나 분해해야함.
-        for(int i = 1; i < n; i++){
-            if(!isBasic[i] && count[n][i] != 0){
+        for (int i = 1; i <= n; i++) {
+            if (parents[i] == 0) {
                 queue.offer(i);
             }
         }
 
         while (!queue.isEmpty()) {
-            // 부품으로 판정된 놈 꺼내서 업데이트하고 0으로 변경
-            int num = queue.poll();
+            // 중간 부품 하나 꺼내.
+            int p = queue.poll();
 
-            // 0 이 아닌 부품 업데이트 근데 이미 존재할 가능성이 있음 -> 그냥 꺼냈을때 0이면 패스
-            if (count[n][num] == 0) {
+            if (!child.containsKey(p)) {
                 continue;
             }
 
-            for(int i = 1; i < n; i++){
-                count[n][i] += count[n][num] * count[num][i];
-            }
+            // 꺼낸놈의 자식들에다가 부모 업데이트 해주기.
+            for (int c : child.get(p)) {
+                if (set.contains(p)) {
+                    for (int i = 1; i <= n; i++) {
+                        if (i == p) {
+                            continue;
+                        }
+                        count[c][i] += count[c][p] * count[p][i];
+                    }
+                    count[c][p] = 0;
+                }
+                parents[c]--;
 
-            count[n][num] = 0;
-
-            for(int i = 1; i < n; i++){
-                if (!isBasic[i] && count[n][i] != 0) {
-                    queue.offer(i);
+                if (parents[c] == 0) {
+                    queue.offer(c);
                 }
             }
         }
 
         for (int i = 1; i < n; i++) {
-            if (isBasic[i]) {
+            if (count[n][i] != 0) {
                 System.out.println(i + " " + count[n][i]);
             }
         }
